@@ -32,7 +32,7 @@ class ADRS:
     def __init__(self):
         self.layer = bytearray(4)
         self.tree  = bytearray(12)
-        self.type  = 0
+        self.type  = AdrsType(0)
     
         self.key_pair = bytearray(4)
         self.chain = bytearray(4)
@@ -59,25 +59,25 @@ class ADRS:
         ADRSc[_TREE] = self.tree
         ADRSc[_TYPE] = struct.pack('>I', self.type)
 
-        if self.type in AdrsType.WOTS_HASH:
+        if self.type == AdrsType.WOTS_HASH:
             ADRSc[_WORD1] = self.key_pair
             ADRSc[_WORD2] = self.chain
             ADRSc[_WORD3] = self.hash
-        elif self.type in AdrsType.WOTS_PK:
+        elif self.type == AdrsType.WOTS_PK:
             ADRSc[_WORD1] = self.key_pair
-        elif self.type in AdrsType.TREE:
+        elif self.type == AdrsType.TREE:
             ADRSc[_WORD2] = self.tree_height
             ADRSc[_WORD3] = self.tree_index
-        elif self.type in AdrsType.FORS_TREE:
+        elif self.type == AdrsType.FORS_TREE:
             ADRSc[_WORD1] = self.key_pair
             ADRSc[_WORD2] = self.tree_height
             ADRSc[_WORD3] = self.tree_index
-        elif self.type in AdrsType.FORS_ROOTS:
+        elif self.type == AdrsType.FORS_ROOTS:
             ADRSc[_WORD1] = self.key_pair
-        elif self.type in AdrsType.WOTS_PRF:
+        elif self.type == AdrsType.WOTS_PRF:
             ADRSc[_WORD1] = self.key_pair
             ADRSc[_WORD2] = self.chain
-        elif self.type in AdrsType.FORS_PRF:
+        elif self.type == AdrsType.FORS_PRF:
             ADRSc[_WORD1] = self.key_pair
             ADRSc[_WORD3] = self.tree_index
 
@@ -111,6 +111,9 @@ class ADRS:
 
     def set_tree_height(self, tree_height: int):
         self.tree_height = struct.pack('>I', tree_height)
+
+    def get_key_pair(self) -> int:
+        return struct.unpack('>I', self.key_pair)[0]
 
     def __str__(self) -> str:
         return f"ADRS(layer={self.layer.hex()}, tree={self.tree.hex()}, type={self.type}, key_pair={self.key_pair.hex()}, chain={self.chain.hex()}, hash={self.hash.hex()}, tree_index={self.tree_index.hex()}, tree_height={self.tree_height.hex()})"

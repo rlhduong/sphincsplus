@@ -17,36 +17,28 @@ m : the message digest length (bytes)
 hash    : "sha2" or "shake"
 """
 
-from hashlib import sha256, shake_256
-from typing import Callable
+
 import math
 
-def sha256_digest(data: bytes) -> bytes:
-    return sha256(data).digest()
-
-def shake256_digest(n: int):
-    def _hash(data: bytes) -> bytes:
-        return shake_256(data).digest(n)
-    return _hash
 
 class Parameters:
     default_parameters = {
-        "sphincs-sha2-128s": (16, 16, 63, 7, 14, 12, sha256_digest),
-        "sphincs-sha2-128f": (16, 16, 66, 22, 33, 6, sha256_digest),
-        "sphincs-sha2-192s": (24, 16, 63, 7, 17, 14, sha256_digest),
-        "sphincs-sha2-192f": (24, 16, 66, 22, 33, 8, sha256_digest),
-        "sphincs-sha2-256s": (32, 16, 64, 8, 22, 14, sha256_digest),
-        "sphincs-sha2-256f": (32, 16, 68, 17, 35, 9, sha256_digest),
+        "sphincs-sha2-128s": (16, 16, 63, 7, 14, 12, 'sha256'),
+        "sphincs-sha2-128f": (16, 16, 66, 22, 33, 6, 'sha256'),
+        "sphincs-sha2-192s": (24, 16, 63, 7, 17, 14, 'sha256'),
+        "sphincs-sha2-192f": (24, 16, 66, 22, 33, 8, 'sha256'),
+        "sphincs-sha2-256s": (32, 16, 64, 8, 22, 14, 'sha256'),
+        "sphincs-sha2-256f": (32, 16, 68, 17, 35, 9, 'sha256'),
 
-        "sphincs-shake-128s": (16, 16, 63, 7, 14, 12, shake256_digest(16)),
-        "sphincs-shake-128f": (16, 16, 66, 22, 33, 6, shake256_digest(16)),
-        "sphincs-shake-192s": (24, 16, 63, 7, 17, 14, shake256_digest(24)),
-        "sphincs-shake-192f": (24, 16, 66, 22, 33, 8, shake256_digest(24)),
-        "sphincs-shake-256s": (32, 16, 64, 8, 22, 14, shake256_digest(32)),
-        "sphincs-shake-256f": (32, 16, 68, 17, 35, 9, shake256_digest(32)),
+        "sphincs-shake-128s": (16, 16, 63, 7, 14, 12, 'shake256'),
+        "sphincs-shake-128f": (16, 16, 66, 22, 33, 6, 'shake256'),
+        "sphincs-shake-192s": (24, 16, 63, 7, 17, 14, 'shake256'),
+        "sphincs-shake-192f": (24, 16, 66, 22, 33, 8, 'shake256'),
+        "sphincs-shake-256s": (32, 16, 64, 8, 22, 14, 'shake256'),
+        "sphincs-shake-256f": (32, 16, 68, 17, 35, 9, 'shake256'),
     }
         
-    def __init__(self, n: int, w: int, h: int, d: int, k: int, log_t: int, hash_fn: Callable[[bytes], bytes]):
+    def __init__(self, n: int, w: int, h: int, d: int, k: int, log_t: int, hash_fn: str):
         self.n = n
         self.w = w
         self.h = h
@@ -56,16 +48,8 @@ class Parameters:
         self.a = log_t
         self.hash_fn = hash_fn
         self.log_w = int(math.log2(w))
-
-    @property
-    def len1(self) -> int:
-        # ceil((8 * n) / log_w)
-        return math.ceil((8 * self.n) / self.log_w)
-
-    @property
-    def len2(self) -> int:
-        # floor(log_w(len1 * (w - 1))) + 1
-        return math.floor(math.log2(self.len1 * (self.w - 1)) / self.log_w) + 1
+        self.len1 = math.ceil((8 * self.n) / self.log_w)
+        self.len2 = math.floor(math.log2(self.len1 * (self.w - 1)) / self.log_w) + 1
 
     @property
     def wots_len(self) -> int:
