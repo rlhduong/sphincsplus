@@ -114,6 +114,12 @@ class ADRS:
 
     def get_key_pair(self) -> int:
         return struct.unpack('>I', self.key_pair)[0]
+    
+    def get_tree_index(self) -> int:
+        return struct.unpack('>I', self.tree_index)[0]
+    
+    def get_tree_height(self) -> int:
+        return struct.unpack('>I', self.tree_height)[0]
 
     def __str__(self) -> str:
         return f"ADRS(layer={self.layer.hex()}, tree={self.tree.hex()}, type={self.type}, key_pair={self.key_pair.hex()}, chain={self.chain.hex()}, hash={self.hash.hex()}, tree_index={self.tree_index.hex()}, tree_height={self.tree_height.hex()})"

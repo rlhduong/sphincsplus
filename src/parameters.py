@@ -50,6 +50,7 @@ class Parameters:
         self.log_w = int(math.log2(w))
         self.len1 = math.ceil((8 * self.n) / self.log_w)
         self.len2 = math.floor(math.log2(self.len1 * (self.w - 1)) / self.log_w) + 1
+        self.h_prime = self.h // self.d
 
     @property
     def wots_len(self) -> int:

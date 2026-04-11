@@ -6,6 +6,12 @@ def to_bytes(x: int, length: int) -> bytes:
 def from_bytes(b: bytes) -> int:
     return int.from_bytes(b, byteorder='big')
 
+def sig_to_array(sig: bytes, n: int) -> list[bytes]:
+    return [sig[i:i+n] for i in range(0, len(sig), n)]
+
+def auth_path_to_array(auth_path: bytes, n: int) -> list[bytes]:
+    return [auth_path[i:i+n] for i in range(0, len(auth_path), n)]
+
 def base_w(x: bytes, w: int, out_len: int) -> list[int]:
     base_w_digits = []
     mask = w - 1

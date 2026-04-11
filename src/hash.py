@@ -4,7 +4,7 @@ from address import ADRS
 from parameters import Parameters
 
 
-def hash(pk_seed: bytes, adrs: ADRS, val: bytes, params: Parameters) -> bytes:
+def h(pk_seed: bytes, adrs: ADRS, val: bytes, params: Parameters) -> bytes:
     if params.hash_fn == 'sha256':
         h = sha256()
     elif params.hash_fn == 'shake256':

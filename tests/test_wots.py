@@ -2,9 +2,8 @@ import secrets
 import pytest
 from src.parameters import Parameters
 from src.address import ADRS, AdrsType
-from src.hash import hash, prf
+from src.hash import h
 from src.wots import chain, wots_gen_sk, wots_gen_pk, wots_sign, wots_pk_from_sig
-from src.utils import base_w
 
 def random_seed(length: int) -> bytes:
     return secrets.token_bytes(length)
@@ -46,9 +45,8 @@ def test_wots_key_gen(params: Parameters, seeds: tuple[bytes, bytes], adrs: ADRS
     pk_adrs = adrs.copy()
     pk_adrs.set_type(AdrsType.WOTS_PK)
     pk_adrs.set_key_pair(adrs.get_key_pair())
-    assert pk == hash(pk_seed, pk_adrs, b''.join(tmp), params)
+    assert pk == h(pk_seed, pk_adrs, b''.join(tmp), params)
 
-    print(pk.hex())
 
 
 def test_wots_sign(params: Parameters, seeds: tuple[bytes, bytes], adrs: ADRS, msg_digest: bytes):
