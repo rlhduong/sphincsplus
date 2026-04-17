@@ -25,17 +25,17 @@ class Parameters:
     default_parameters = {
         "sphincs-sha2-128s": (16, 16, 63, 7, 14, 12, 'sha256'),
         "sphincs-sha2-128f": (16, 16, 66, 22, 33, 6, 'sha256'),
-        "sphincs-sha2-192s": (24, 16, 63, 7, 17, 14, 'sha256'),
-        "sphincs-sha2-192f": (24, 16, 66, 22, 33, 8, 'sha256'),
-        "sphincs-sha2-256s": (32, 16, 64, 8, 22, 14, 'sha256'),
-        "sphincs-sha2-256f": (32, 16, 68, 17, 35, 9, 'sha256'),
+        "sphincs-sha2-192s": (24, 16, 63, 7, 17, 14, 'sha512'),
+        "sphincs-sha2-192f": (24, 16, 66, 22, 33, 8, 'sha512'),
+        "sphincs-sha2-256s": (32, 16, 64, 8, 22, 14, 'sha512'),
+        "sphincs-sha2-256f": (32, 16, 68, 17, 35, 9, 'sha512'),
 
-        "sphincs-shake-128s": (16, 16, 63, 7, 14, 12, 'shake256'),
-        "sphincs-shake-128f": (16, 16, 66, 22, 33, 6, 'shake256'),
-        "sphincs-shake-192s": (24, 16, 63, 7, 17, 14, 'shake256'),
-        "sphincs-shake-192f": (24, 16, 66, 22, 33, 8, 'shake256'),
-        "sphincs-shake-256s": (32, 16, 64, 8, 22, 14, 'shake256'),
-        "sphincs-shake-256f": (32, 16, 68, 17, 35, 9, 'shake256'),
+        "sphincs-shake-128s": (16, 16, 63, 7, 14, 12, 'shake'),
+        "sphincs-shake-128f": (16, 16, 66, 22, 33, 6, 'shake'),
+        "sphincs-shake-192s": (24, 16, 63, 7, 17, 14, 'shake'),
+        "sphincs-shake-192f": (24, 16, 66, 22, 33, 8, 'shake'),
+        "sphincs-shake-256s": (32, 16, 64, 8, 22, 14, 'shake'),
+        "sphincs-shake-256f": (32, 16, 68, 17, 35, 9, 'shake'),
     }
         
     def __init__(self, n: int, w: int, h: int, d: int, k: int, log_t: int, hash_fn: str):
@@ -51,15 +51,28 @@ class Parameters:
         self.len1 = math.ceil((8 * self.n) / self.log_w)
         self.len2 = math.floor(math.log2(self.len1 * (self.w - 1)) / self.log_w) + 1
         self.h_prime = self.h // self.d
+        self.RANDOMIZE = True
+
+    def set_RANDOMIZE(self, randomize: bool):
+        self.RANDOMIZE = randomize
 
     @property
     def wots_len(self) -> int:
         return self.len1 + self.len2
+    
+    def len_md(self) -> int:
+        return math.floor((self.k * self.log_t + 7) / 8)
+    
+    def idx_tree_len(self) -> int:
+        return math.floor((self.h - self.h / self.d + 7) / 8)
+    
+    def idx_leaf_len(self) -> int:
+        return math.floor((self.h / self.d + 7) / 8)
 
     @property
     def m(self) -> int:
-        return math.floor((self.k * self.log_t + 7) / 8) + math.floor((self.h - self.h / self.d + 7) / 8) + math.floor((self.h / self.d + 7) / 8)
-    
+        return self.len_md() + self.idx_tree_len() + self.idx_leaf_len()
+
     @classmethod
     def get_paramset(cls, name: str) -> 'Parameters':
         n, w, h, d, k, log_t, hash_fn = cls.default_parameters[name]

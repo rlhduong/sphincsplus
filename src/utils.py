@@ -12,6 +12,12 @@ def sig_to_array(sig: bytes, n: int) -> list[bytes]:
 def auth_path_to_array(auth_path: bytes, n: int) -> list[bytes]:
     return [auth_path[i:i+n] for i in range(0, len(auth_path), n)]
 
+def first_bits(x: bytes, num_bits: int) -> int:
+    bits = len(x) * 8
+    value = int.from_bytes(x, byteorder='big')
+    result = value >> (bits - num_bits)
+    return result
+
 def base_w(x: bytes, w: int, out_len: int) -> list[int]:
     base_w_digits = []
     mask = w - 1

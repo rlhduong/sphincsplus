@@ -37,7 +37,7 @@ def hypertree_sign(msg_digest: bytes, sk_seed: bytes, pk_seed: bytes, idx_tree: 
     
     return sig_ht
 
-def hypertree_verify(msg_digest: bytes, sig_ht: bytes, pk_seed: bytes, idx_tree: int, idx_leaf: int, params: Parameters, pk_ht: bytes) -> bool:
+def hypertree_verify(msg_digest: bytes, sig_ht: bytes, pk_seed: bytes, idx_tree: int, idx_leaf: int, pk_ht: bytes, params: Parameters) -> bool:
     adrs = ADRS()
     adrs.set_layer(0)
     adrs.set_tree(idx_tree)

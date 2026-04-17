@@ -41,10 +41,10 @@ def test_hypertree(params: Parameters, seeds: tuple[bytes, bytes], msg_digest: b
     sig_ht = hypertree_sign(msg_digest, sk_seed, pk_seed, idx_tree, idx_leaf, params)
 
     # Verify the signature
-    assert hypertree_verify(msg_digest, sig_ht, pk_seed, idx_tree, idx_leaf, params, pk_ht)
+    assert hypertree_verify(msg_digest, sig_ht, pk_seed, idx_tree, idx_leaf, pk_ht, params)
 
 
     sig_ht_invalid = sig_ht[:-1] + bytes([sig_ht[-1] ^ 0xFF])  # Corrupt the signature
-    assert not hypertree_verify(msg_digest, sig_ht_invalid, pk_seed, idx_tree, idx_leaf, params, pk_ht)
+    assert not hypertree_verify(msg_digest, sig_ht_invalid, pk_seed, idx_tree, idx_leaf, pk_ht, params)
 
     
