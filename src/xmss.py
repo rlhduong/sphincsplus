@@ -34,15 +34,15 @@ def xmss_pk_gen(sk_seed: bytes, pk_seed: bytes, adrs: ADRS, params: Parameters) 
     return treehash(sk_seed, 0, params.h_prime, pk_seed, adrs, params)
 
 def xmss_sign(msg_digest: bytes, sk_seed: bytes, idx: int, pk_seed: bytes, adrs: ADRS, params: Parameters) -> bytes:
-    auth_path = []
+    auth_path = b''
     for j in range(0, params.h_prime):
         k = math.floor(idx / (1 << j)) ^ 1
-        auth_path.append(treehash(sk_seed, k * (1 << j), j, pk_seed, adrs, params))
+        auth_path += treehash(sk_seed, k * (1 << j), j, pk_seed, adrs, params)
 
     adrs.set_type(AdrsType.WOTS_HASH)
     adrs.set_key_pair(idx)
     sig = wots_sign(msg_digest, sk_seed, pk_seed, adrs.copy(), params)
-    sig_xmss = sig + b''.join(auth_path)
+    sig_xmss = sig + auth_path
     return sig_xmss
 
 

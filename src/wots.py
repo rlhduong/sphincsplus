@@ -33,7 +33,7 @@ def wots_gen_pk(sk_seed: bytes, pk_seed: bytes, adrs: ADRS, params: Parameters) 
     sk_adrs.set_type(AdrsType.WOTS_PRF)
     sk_adrs.set_key_pair(adrs.get_key_pair())
 
-    tmp = []
+    tmp = b''
     sk = []
 
     for i in range(0, params.wots_len):
@@ -43,11 +43,11 @@ def wots_gen_pk(sk_seed: bytes, pk_seed: bytes, adrs: ADRS, params: Parameters) 
 
         adrs.set_chain(i)
         adrs.set_hash(0)
-        tmp.append(chain(sk[i], 0, params.w - 1, pk_seed, adrs, params))
+        tmp += chain(sk[i], 0, params.w - 1, pk_seed, adrs, params)
 
     pk_adrs.set_type(AdrsType.WOTS_PK)
     pk_adrs.set_key_pair(adrs.get_key_pair())
-    pk = h(pk_seed, pk_adrs, b''.join(tmp), params)
+    pk = h(pk_seed, pk_adrs, tmp, params)
 
     return pk
 
@@ -69,7 +69,7 @@ def wots_sign(msg_digest: bytes, sk_seed: bytes, pk_seed: bytes, adrs: ADRS, par
     sk_adrs = adrs.copy()
     sk_adrs.set_type(AdrsType.WOTS_PRF)
     sk_adrs.set_key_pair(adrs.get_key_pair())
-    tmp = []
+    sig = b''
     for i in range(0, params.wots_len):
         sk_adrs.set_chain(i)
         sk_adrs.set_hash(0)
@@ -77,9 +77,8 @@ def wots_sign(msg_digest: bytes, sk_seed: bytes, pk_seed: bytes, adrs: ADRS, par
 
         adrs.set_chain(i)
         adrs.set_hash(0)
-        tmp.append(chain(sk, 0, msg_base_w[i], pk_seed, adrs, params))
+        sig += chain(sk, 0, msg_base_w[i], pk_seed, adrs, params)
 
-    sig = b''.join(tmp)
     return sig
 
 
@@ -99,13 +98,13 @@ def wots_pk_from_sig(sig: bytes, msg_digest: bytes, pk_seed: bytes, adrs: ADRS, 
     msg_base_w += csum_base_w
 
     sig_array = sig_to_array(sig, params.n)
-    tmp = []
+    tmp = b''
     for i in range(0, params.wots_len):
         adrs.set_chain(i)
         adrs.set_hash(0)
-        tmp.append(chain(sig_array[i], msg_base_w[i], params.w - 1 - msg_base_w[i], pk_seed, adrs, params))
+        tmp += chain(sig_array[i], msg_base_w[i], params.w - 1 - msg_base_w[i], pk_seed, adrs, params)
     
     pk_adrs = adrs.copy()
     pk_adrs.set_type(AdrsType.WOTS_PK)
     pk_adrs.set_key_pair(adrs.get_key_pair())
-    return h(pk_seed, pk_adrs, b''.join(tmp), params)
+    return h(pk_seed, pk_adrs, tmp, params)
