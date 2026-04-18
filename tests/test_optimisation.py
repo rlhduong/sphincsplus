@@ -73,3 +73,68 @@ def test_baseline_and_optimised_produce_identical_signatures(params: Parameters)
         assert _with_mode(True, spx_verify, msg, sig_a, pk_a, params)
     finally:
         _s.token_bytes = real_token_bytes
+
+
+# ---------------------------------------------------------------------------
+# Optimisation 4 — ADRS snapshot (h_adrs_bytes)
+# ---------------------------------------------------------------------------
+
+def test_h_adrs_bytes_matches_h(params: Parameters):
+    """h_adrs_bytes(pk_seed, adrs.to_bytes(), val) must equal h(pk_seed, adrs, val)
+    for every AdrsType, both with and without a HashCtx active."""
+    import secrets
+    from src.address import ADRS, AdrsType
+    from src.hash import h, h_adrs_bytes, set_hash_ctx, clear_hash_ctx
+    from src.hash_ctx import HashCtx
+
+    pk_seed = secrets.token_bytes(params.n)
+    val = secrets.token_bytes(params.n * 2)
+
+    for adrs_type in AdrsType:
+        adrs = ADRS()
+        adrs.set_type(adrs_type)
+        adrs.set_key_pair(7)
+        adrs.set_chain(3)
+        adrs.set_hash(1)
+
+        # baseline path (no HashCtx)
+        expected = h(pk_seed, adrs, val, params)
+        got = h_adrs_bytes(pk_seed, adrs.to_bytes(), val, params)
+        assert expected == got, f"h_adrs_bytes mismatch (no ctx) for AdrsType.{adrs_type.name}"
+
+        # optimised path (HashCtx active)
+        ctx = HashCtx(pk_seed, params)
+        set_hash_ctx(ctx)
+        try:
+            expected_ctx = h(pk_seed, adrs, val, params)
+            got_ctx = h_adrs_bytes(pk_seed, adrs.to_bytes(), val, params)
+        finally:
+            clear_hash_ctx()
+
+        assert expected_ctx == got_ctx, f"h_adrs_bytes mismatch (with ctx) for AdrsType.{adrs_type.name}"
+        assert expected == expected_ctx, f"h() differs baseline vs HashCtx for AdrsType.{adrs_type.name}"
+
+
+def test_opt4_end_to_end(params: Parameters):
+    """Full sign/verify round-trip with Opt-4 active (h_adrs_bytes in xmss)."""
+    import secrets as _s
+
+    counter = {"i": 0}
+    real_token_bytes = _s.token_bytes
+
+    def fake_token_bytes(n: int) -> bytes:
+        counter["i"] += 1
+        return bytes([counter["i"] % 256] * n)
+
+    _s.token_bytes = fake_token_bytes
+    try:
+        counter["i"] = 0
+        sphincs_mod.set_optimised(True)
+        sk, pk = spx_keygen(params)
+        msg = b"opt4 parity"
+        sig = spx_sign(msg, sk, params)
+        assert spx_verify(msg, sig, pk, params), "Opt-4 signature failed to verify"
+        assert not spx_verify(b"wrong message", sig, pk, params), "Opt-4 accepted wrong message"
+    finally:
+        _s.token_bytes = real_token_bytes
+        sphincs_mod.set_optimised(True)

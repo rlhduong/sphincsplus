@@ -113,6 +113,35 @@ def h(pk_seed: bytes, adrs: ADRS, val: bytes, params: Parameters) -> bytes:
     return hh.digest()[: params.n]
 
 
+def h_adrs_bytes(pk_seed: bytes, adrs_bytes: bytes, val: bytes, params: Parameters) -> bytes:
+    """Optimisation 4 - ADRS snapshot.
+
+    Identical digest to h(pk_seed, adrs, val, params) when
+    adrs_bytes == adrs.to_bytes().
+
+    Call sites that previously wrote h(pk_seed, adrs.copy(), val, params)
+    can substitute h_adrs_bytes(pk_seed, adrs.to_bytes(), val, params)
+    to eliminate the intermediate ADRS object allocation and the associated
+    bytearray(32) copy.  On sphincs-sha2-128s this fires ~32 000 times per
+    spx_sign (once per interior Merkle node across all XMSS trees) and a
+    further h_prime times per spx_verify auth-path reconstruction.
+    """
+    if _active_pk_base is not None:
+        c = _active_pk_base.copy()
+        c.update(adrs_bytes)
+        c.update(val)
+        if _active_is_shake:
+            return c.digest(_active_n)
+        return c.digest()[:_active_n]
+    hh = _new_hash(params)
+    hh.update(pk_seed)
+    hh.update(adrs_bytes)
+    hh.update(val)
+    if params.hash_fn == 'shake':
+        return hh.digest(params.n)
+    return hh.digest()[: params.n]
+
+
 def prf(sk_seed: bytes, adrs: ADRS, params: Parameters) -> bytes:
     if _active_sk_base is not None:
         c = _active_sk_base.copy()
