@@ -1,9 +1,9 @@
 import math
-from address import ADRS, AdrsType
-from parameters import Parameters
-from wots import wots_gen_pk, wots_sign, wots_pk_from_sig
-from utils import auth_path_to_array
-from hash import h, prf
+from src.address import ADRS, AdrsType
+from src.parameters import Parameters
+from src.wots import wots_gen_pk, wots_sign, wots_pk_from_sig
+from src.utils import auth_path_to_array
+from src.hash import h, prf
 
 def get_idx_from_msg(msg_digest: bytes, i: int, params: Parameters) -> int:
     bits = len(msg_digest) * 8
@@ -42,6 +42,13 @@ def fors_treehash(sk_seed: bytes, s: int, z: int, pk_seed: bytes, adrs: ADRS, pa
 
     for i in range(0, 1 << z):
         sk = fors_sk_gen(sk_seed, adrs, s + i, params)
+        # Set the FORS leaf address (tree_height=0, tree_index=s+i) before
+        # hashing so that it matches the leaf-hash input that
+        # `fors_pk_from_sig` constructs during verification. Without this,
+        # fors_pk_gen and fors_pk_from_sig disagree as soon as
+        # `ADRS.to_bytes()` faithfully emits the tree_height/tree_index slots.
+        adrs.set_tree_height(0)
+        adrs.set_tree_index(s + i)
         node = h(pk_seed, adrs.copy(), sk, params)
 
         adrs.set_tree_height(1)

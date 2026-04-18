@@ -1,0 +1,35 @@
+sphincs-sha2-128s      keygen           223.22           191.60     1.17x
+sphincs-sha2-128s      sign            1933.97          1595.86     1.21x
+sphincs-sha2-128s      verify             1.85             1.66     1.12x
+
+====================================================================================================
+cProfile: baseline spx_sign on sphincs-sha2-128s (top 20 cumulative)
+====================================================================================================
+         24957340 function calls in 5.734 seconds
+
+   Ordered by: cumulative time
+   List reduced from 65 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    5.734    5.734 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/sphincs.py:64(spx_sign)
+        1    0.000    0.000    5.734    5.734 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/sphincs.py:75(_spx_sign_body)
+        1    0.000    0.000    4.859    4.859 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/hypertree.py:17(hypertree_sign)
+        7    0.000    0.000    4.854    0.693 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/xmss.py:36(xmss_sign)
+       63    0.014    0.000    4.849    0.077 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/xmss.py:9(treehash)
+     3577    0.169    0.000    4.813    0.001 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/wots.py:30(wots_gen_pk)
+   125650    0.570    0.000    4.289    0.000 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/wots.py:8(chain)
+  2003156    1.578    0.000    3.506    0.000 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/hash.py:83(h)
+        1    0.000    0.000    0.874    0.874 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/fors.py:81(fors_sign)
+      168    0.181    0.001    0.874    0.005 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/fors.py:37(fors_treehash)
+  2185942    0.306    0.000    0.626    0.000 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/hash.py:62(_new_hash)
+  6375043    0.621    0.000    0.621    0.000 {method 'update' of '_hashlib.HASH' objects}
+  2185942    0.550    0.000    0.550    0.000 {method 'digest' of '_hashlib.HASH' objects}
+  2132420    0.307    0.000    0.503    0.000 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/address.py:80(set_hash)
+  2185942    0.319    0.000    0.319    0.000 {built-in method _hashlib.openssl_sha256}
+   182784    0.145    0.000    0.309    0.000 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/hash.py:102(prf)
+  2185940    0.295    0.000    0.295    0.000 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/address.py:53(to_bytes)
+  2996322    0.276    0.000    0.276    0.000 {built-in method _struct.pack_into}
+    57344    0.061    0.000    0.258    0.000 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/fors.py:27(fors_sk_gen)
+   182936    0.048    0.000    0.066    0.000 /Users/tringuyen/UNSW/COMP3453/sphincsplus/src/address.py:47(copy)
+
+

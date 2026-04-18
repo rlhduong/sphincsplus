@@ -2,7 +2,7 @@ import secrets
 import pytest
 from src.parameters import Parameters
 from src.address import ADRS, AdrsType
-from hypertree import hypertree_verify, hypertree_sign, hypertree_gen_pk
+from src.hypertree import hypertree_verify, hypertree_sign, hypertree_gen_pk
 
 def random_seed(length: int) -> bytes:
     return secrets.token_bytes(length)

@@ -1,8 +1,8 @@
-from address import ADRS, AdrsType
-from parameters import Parameters
-from utils import base_w, sig_to_array
+from src.address import ADRS, AdrsType
+from src.parameters import Parameters
+from src.utils import base_w, sig_to_array
 import math
-from hash import h, prf
+from src.hash import h, prf
 
 
 def chain(x: bytes, i: int, s: int, pk_seed: bytes, adrs: ADRS, params: Parameters) -> bytes:

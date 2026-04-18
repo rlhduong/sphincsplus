@@ -2,7 +2,7 @@ import secrets
 import pytest
 from src.parameters import Parameters
 from src.address import ADRS, AdrsType
-from fors import fors_sign, fors_sk_gen, fors_pk_gen, fors_pk_from_sig
+from src.fors import fors_sign, fors_sk_gen, fors_pk_gen, fors_pk_from_sig
 import math
 def random_seed(length: int) -> bytes:
     return bytes.fromhex("11" * length)
@@ -23,8 +23,14 @@ def msg_digest(params: Parameters) -> bytes:
 
 @pytest.fixture
 def adrs():
+    # spx_sign / spx_verify always call fors_sign / fors_pk_from_sig with a
+    # FORS_TREE-typed address (see src/sphincs.py). Using WOTS_HASH here only
+    # happened to work under the old `ADRS.to_bytes()` implementation because
+    # it silently dropped tree_height/tree_index writes for non-TREE types.
+    # Using the semantically correct type makes the test robust against ADRS
+    # refactors.
     a = ADRS()
-    a.set_type(AdrsType.WOTS_HASH)
+    a.set_type(AdrsType.FORS_TREE)
     a.set_key_pair(0)
     return a
 

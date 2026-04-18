@@ -1,6 +1,6 @@
-from address import ADRS
-from parameters import Parameters
-from xmss import xmss_pk_gen, xmss_sign, xmss_pk_from_sig
+from src.address import ADRS
+from src.parameters import Parameters
+from src.xmss import xmss_pk_gen, xmss_sign, xmss_pk_from_sig
 
 
 def get_xmss_sig_by_level(sig_ht: bytes, level: int, params: Parameters) -> bytes:

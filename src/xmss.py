@@ -1,9 +1,9 @@
 import math
-from address import ADRS, AdrsType
-from parameters import Parameters
-from wots import wots_gen_pk, wots_sign, wots_pk_from_sig
-from utils import auth_path_to_array
-from hash import h
+from src.address import ADRS, AdrsType
+from src.parameters import Parameters
+from src.wots import wots_gen_pk, wots_sign, wots_pk_from_sig
+from src.utils import auth_path_to_array
+from src.hash import h
 
 
 def treehash(sk_seed: bytes, s: int, z: int, pk_seed: bytes, adrs: ADRS, params: Parameters) -> bytes:

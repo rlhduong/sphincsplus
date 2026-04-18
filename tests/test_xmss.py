@@ -2,7 +2,7 @@ import secrets
 import pytest
 from src.parameters import Parameters
 from src.address import ADRS, AdrsType
-from xmss import xmss_pk_gen, xmss_sign, xmss_pk_from_sig
+from src.xmss import xmss_pk_gen, xmss_sign, xmss_pk_from_sig
 
 def random_seed(length: int) -> bytes:
     return secrets.token_bytes(length)
