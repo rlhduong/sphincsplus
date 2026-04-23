@@ -2,9 +2,7 @@
 
 A Python implementation of SPHINCS+ (also known as SLH-DSA, standardised by NIST as FIPS 205), extended with a group signature scheme based on [DGSP (eprint 2025/760)](https://eprint.iacr.org/2025/760).
 
-The baseline follows the [SPHINCS+ spec (eprint 2019/1086)](https://eprint.iacr.org/2019/1086.pdf). No external dependencies — just Python's standard library.
-
----
+The baseline follows the [SPHINCS+ spec (eprint 2019/1086)](https://eprint.iacr.org/2019/1086.pdf). No external dependencies just Python's standard library.
 
 ## Project layout
 
@@ -36,7 +34,6 @@ sphincsplus/
 └── conftest.py
 ```
 
----
 
 ## Quick start
 
@@ -47,9 +44,8 @@ python -m venv .venv
 .venv/bin/python bench.py
 ```
 
----
 
-## Part 1 — SPHINCS+ baseline + optimisations
+## Part 1: SPHINCS+ baseline + optimisations
 
 ### What SPHINCS+ is
 
@@ -72,7 +68,7 @@ ok  = spx_verify(message, sig, pk, params)
 
 ### Optimisations
 
-Three optimisations were added on top of the baseline. None of them change the cryptography — a signature from the optimised path and the baseline path are byte-identical, which `tests/test_optimisation.py` checks.
+Three optimisations were added on top of the baseline. None of them change the cryptography, a signature from the optimised path and the baseline path are byte-identical, which `tests/test_optimisation.py` checks.
 
 **1. Mutable ADRS buffer (`src/address.py`)**
 
@@ -104,21 +100,19 @@ Hardware: Apple Silicon, Python 3.14.3, single-threaded, `RANDOMIZE=False`, para
 
 The ADRS refactor is responsible for most of the gain (~2×). HashCtx adds about another 10% on top.
 
-The profiler shows that even after optimisation, 61% of signing time is inside `hash.h` (2 million calls). The remaining bottleneck is fundamentally the Python→C boundary on each hashlib call — you'd need a C extension or batching to push much further.
+The profiler shows that even after optimisation, 61% of signing time is inside `hash.h` (2 million calls). The remaining bottleneck is fundamentally the Python→C boundary on each hashlib call, you'd need a C extension or batching to push much further.
 
 ### Bug fixes
 
 Fixing the ADRS made the code spec-compliant and exposed three pre-existing bugs:
 
-- `src/fors.py` — missing `set_tree_height(0)` / `set_tree_index(s+i)` before the leaf hash, meaning `fors_pk_gen` and `fors_pk_from_sig` produced different leaf inputs.
-- `tests/test_fors.py` — the ADRS fixture used `WOTS_HASH` type instead of `FORS_TREE`.
-- `src/hash.py` — `shake_256().digest()` with no length argument raises an error. Fixed to pass `params.n` / `params.m`.
+- `src/fors.py` - missing `set_tree_height(0)` / `set_tree_index(s+i)` before the leaf hash, meaning `fors_pk_gen` and `fors_pk_from_sig` produced different leaf inputs.
+- `tests/test_fors.py` - the ADRS fixture used `WOTS_HASH` type instead of `FORS_TREE`.
+- `src/hash.py` - `shake_256().digest()` with no length argument raises an error. Fixed to pass `params.n` / `params.m`.
 
 All imports were also changed from bare (`from address import ADRS`) to the `src.` prefix so pytest works from the repo root.
 
----
-
-## Part 2 — Group signature scheme (DGSP)
+## Part 2: Group signature scheme (DGSP)
 
 Implementation in `src/group_sig.py`, tests in `tests/test_group_sig.py`.
 
@@ -152,9 +146,9 @@ certs = gen_cert(msk, uid, cid_star, wots_pks, ml, params)  # manager certifies 
 ```
 
 Each certificate contains:
-- `zeta` — encrypted `(user_id, counter)`, opaque to verifiers
-- `pi` — hash binding the WOTS+ key to the user's identity
-- `spx_sig` — manager's SPHINCS+ signature over the whole bundle
+- `zeta` - encrypted `(user_id, counter)`, opaque to verifiers
+- `pi` - hash binding the WOTS+ key to the user's identity
+- `spx_sig` - manager's SPHINCS+ signature over the whole bundle
 
 **Signing a message**
 
@@ -198,10 +192,10 @@ revoke(msk, [uid], membership_list, revoked_set, params)
 
 ### Security properties
 
-- **Unforgeability** — you can't produce a valid group signature without a manager-issued certificate, which relies on the unforgeability of SPHINCS+.
-- **Anonymity** — verifiers see only `zeta` (which looks random without the tracing key) and a SPHINCS+ signature on the certificate message. Nothing links to a specific user.
-- **Traceability** — the manager can always recover `user_id` from `zeta` by decryption, and `judge` lets anyone check the claim.
-- **Forward anonymity** — revoking a user doesn't de-anonymise their past signatures, it just makes future verifications of their signatures fail.
+- **Unforgeability**: you can't produce a valid group signature without a manager-issued certificate, which relies on the unforgeability of SPHINCS+.
+- **Anonymity**: verifiers see only `zeta` (which looks random without the tracing key) and a SPHINCS+ signature on the certificate message. Nothing links to a specific user.
+- **Traceability**: the manager can always recover `user_id` from `zeta` by decryption, and `judge` lets anyone check the claim.
+- **Forward anonymity**: revoking a user doesn't de-anonymise their past signatures, it just makes future verifications of their signatures fail.
 
 ### Encryption note
 
@@ -210,12 +204,11 @@ The Rust reference implementation uses AES-128-ECB for `zeta` encryption. Since 
 ### Tests
 
 ```
-tests/test_group_sig.py — 6 tests, all pass in ~7s on sphincs-sha2-128s
+tests/test_group_sig.py - 6 tests, all pass in ~7s on sphincs-sha2-128s
 ```
 
 Covers: sign/verify roundtrip, wrong message rejection, revocation, open+judge, invalid `cid_star` rejection, and two independent users in the same group.
 
----
 
 ## Running everything
 

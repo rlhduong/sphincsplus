@@ -38,7 +38,19 @@ class HashCtx:
 
     __slots__ = ("_pk_base", "_sk_base", "_n", "_is_shake")
 
-    def __init__(self, pk_seed: bytes, params: Parameters, sk_seed: bytes | None = None):
+    def __init__(
+        self, pk_seed: bytes, params: Parameters, sk_seed: bytes | None = None
+    ):
+        """Pre-absorb the seed(s) into reusable hashlib states.
+
+        Args:
+            pk_seed: Public-key seed; absorbed into ``_pk_base`` used by
+                every subsequent tweakable-hash call.
+            params: Parameter set selecting hash function and output length.
+            sk_seed: Optional secret-key seed. Pass only when the caller also
+                needs ``prf``; passing ``None`` keeps ``sk_seed`` off the
+                context so ``prf`` will deliberately raise if invoked.
+        """
         self._n = params.n
         self._is_shake = params.hash_fn == "shake"
 
@@ -53,6 +65,12 @@ class HashCtx:
 
     @staticmethod
     def _new_hash(params: Parameters):
+        """Return a fresh hashlib object matching ``params.hash_fn``.
+
+        Kept on the class (rather than importing ``src.hash._new_hash``) so
+        ``HashCtx`` has no dependency on ``src.hash`` — ``src.hash`` imports
+        ``HashCtx``, not the other way round.
+        """
         if params.hash_fn == "sha256":
             return sha256()
         if params.hash_fn == "sha512":
@@ -62,6 +80,20 @@ class HashCtx:
         raise ValueError(f"Unsupported hash function: {params.hash_fn!r}")
 
     def h(self, adrs_bytes: bytes, val: bytes) -> bytes:
+        """Object-level fast-path tweakable hash (digest-equivalent to ``src.hash.h``).
+
+        Callers typically go through the module-level ``src.hash.h`` which
+        inlines the same logic; this method exists for direct use in tests
+        and for any downstream code that prefers an explicit context handle.
+
+        Args:
+            adrs_bytes: Serialised ``ADRS`` (``adrs.to_bytes()``).
+            val: Payload concatenated after the address.
+
+        Returns:
+            ``n``-byte digest (``sha256``/``sha512`` truncated to ``n``, or
+            ``shake_256`` sized to ``n``).
+        """
         c = self._pk_base.copy()
         c.update(adrs_bytes)
         c.update(val)
@@ -70,6 +102,18 @@ class HashCtx:
         return c.digest()[: self._n]
 
     def prf(self, adrs_bytes: bytes) -> bytes:
+        """Object-level fast-path PRF (digest-equivalent to ``src.hash.prf``).
+
+        Args:
+            adrs_bytes: Serialised ``ADRS`` keying this PRF invocation.
+
+        Returns:
+            ``n``-byte pseudorandom output.
+
+        Raises:
+            RuntimeError: If this context was built without ``sk_seed``, so
+                there is no pre-absorbed secret state to clone.
+        """
         if self._sk_base is None:
             raise RuntimeError("HashCtx was built without sk_seed; prf() unavailable")
         c = self._sk_base.copy()
