@@ -18,12 +18,14 @@ from src.sphincs import spx_keygen, spx_sign, spx_verify
 
 @pytest.fixture
 def params() -> Parameters:
+    """Deterministic ``sphincs-sha2-128s`` with randomised signing disabled."""
     p = Parameters.get_paramset("sphincs-sha2-128s")
     p.set_RANDOMIZE(False)
     return p
 
 
 def _with_mode(flag: bool, fn, *args, **kwargs):
+    """Execute ``fn(*args, **kwargs)`` with ``OPTIMISED`` set to ``flag``, restoring the original value afterwards."""
     prev = sphincs_mod.OPTIMISED
     sphincs_mod.set_optimised(flag)
     try:
@@ -33,6 +35,7 @@ def _with_mode(flag: bool, fn, *args, **kwargs):
 
 
 def test_optimised_roundtrip(params: Parameters):
+    """Optimised keygen → sign → verify must round-trip; wrong message must fail."""
     sk, pk = _with_mode(True, spx_keygen, params)
     msg = b"optimised roundtrip"
     sig = _with_mode(True, spx_sign, msg, sk, params)
@@ -79,6 +82,7 @@ def test_baseline_and_optimised_produce_identical_signatures(params: Parameters)
 # Optimisation 4 — ADRS snapshot (h_adrs_bytes)
 # ---------------------------------------------------------------------------
 
+
 def test_h_adrs_bytes_matches_h(params: Parameters):
     """h_adrs_bytes(pk_seed, adrs.to_bytes(), val) must equal h(pk_seed, adrs, val)
     for every AdrsType, both with and without a HashCtx active."""
@@ -100,7 +104,9 @@ def test_h_adrs_bytes_matches_h(params: Parameters):
         # baseline path (no HashCtx)
         expected = h(pk_seed, adrs, val, params)
         got = h_adrs_bytes(pk_seed, adrs.to_bytes(), val, params)
-        assert expected == got, f"h_adrs_bytes mismatch (no ctx) for AdrsType.{adrs_type.name}"
+        assert expected == got, (
+            f"h_adrs_bytes mismatch (no ctx) for AdrsType.{adrs_type.name}"
+        )
 
         # optimised path (HashCtx active)
         ctx = HashCtx(pk_seed, params)
@@ -111,8 +117,12 @@ def test_h_adrs_bytes_matches_h(params: Parameters):
         finally:
             clear_hash_ctx()
 
-        assert expected_ctx == got_ctx, f"h_adrs_bytes mismatch (with ctx) for AdrsType.{adrs_type.name}"
-        assert expected == expected_ctx, f"h() differs baseline vs HashCtx for AdrsType.{adrs_type.name}"
+        assert expected_ctx == got_ctx, (
+            f"h_adrs_bytes mismatch (with ctx) for AdrsType.{adrs_type.name}"
+        )
+        assert expected == expected_ctx, (
+            f"h() differs baseline vs HashCtx for AdrsType.{adrs_type.name}"
+        )
 
 
 def test_opt4_end_to_end(params: Parameters):
@@ -134,7 +144,9 @@ def test_opt4_end_to_end(params: Parameters):
         msg = b"opt4 parity"
         sig = spx_sign(msg, sk, params)
         assert spx_verify(msg, sig, pk, params), "Opt-4 signature failed to verify"
-        assert not spx_verify(b"wrong message", sig, pk, params), "Opt-4 accepted wrong message"
+        assert not spx_verify(b"wrong message", sig, pk, params), (
+            "Opt-4 accepted wrong message"
+        )
     finally:
         _s.token_bytes = real_token_bytes
         sphincs_mod.set_optimised(True)

@@ -1,4 +1,5 @@
 """Pytest bootstrap: make `src` importable as a package from the repo root."""
+
 import os
 import sys
 

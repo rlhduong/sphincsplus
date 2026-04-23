@@ -1,19 +1,40 @@
+"""Group signature scheme integration tests.
+
+Covers sign/verify, message tamper rejection, revocation, open/judge,
+invalid ``cid_star`` rejection, and two-user independence with selective
+revocation.
+"""
+
 import pytest
 from src.parameters import Parameters
 from src.group_sig import (
-    keygen_manager, keygen_user, join, csr, gen_cert,
-    sign, verify, open_sig, judge, revoke,
+    keygen_manager,
+    keygen_user,
+    join,
+    csr,
+    gen_cert,
+    sign,
+    verify,
+    open_sig,
+    judge,
+    revoke,
     MembershipList,
 )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def params():
+    """``sphincs-sha2-128s`` parameter set (module-scoped for speed)."""
     return Parameters.get_paramset("sphincs-sha2-128s")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def setup(params):
+    """Bootstrapped group with one user ("alice") holding 3 certificates.
+
+    Returns:
+        ``(mpk, msk, ml, seed_u, uid, wots_seeds, certs)``
+    """
     mpk, msk = keygen_manager(params)
     ml = MembershipList()
     seed_u = keygen_user(params)
@@ -24,6 +45,7 @@ def setup(params):
 
 
 def test_sign_and_verify(setup, params):
+    """A valid group signature must verify successfully."""
     mpk, msk, ml, seed_u, uid, wots_seeds, certs = setup
     msg = b"test message"
     sig = sign(msg, seed_u, uid, wots_seeds[0], certs[0], params)
@@ -31,6 +53,7 @@ def test_sign_and_verify(setup, params):
 
 
 def test_wrong_message_fails(setup, params):
+    """Verifying against a different message must fail."""
     mpk, _, _, seed_u, uid, wots_seeds, certs = setup
     msg = b"original"
     sig = sign(msg, seed_u, uid, wots_seeds[1], certs[1], params)
@@ -38,20 +61,20 @@ def test_wrong_message_fails(setup, params):
 
 
 def test_revocation(setup, params):
+    """After revoking a user, their previously valid signature must be rejected."""
     mpk, msk, ml, seed_u, uid, wots_seeds, certs = setup
     msg = b"revoke test"
 
-    # sign before revocation - should work
     sig = sign(msg, seed_u, uid, wots_seeds[2], certs[2], params)
     revoked: set = set()
     assert verify(msg, sig, revoked, mpk, params)
 
-    # revoke and check signature is now rejected
     revoke(msk, [uid], ml, revoked, params)
     assert not verify(msg, sig, revoked, mpk, params)
 
 
 def test_open_and_judge(params):
+    """Opening a signature must recover the signer; judge must confirm attribution."""
     mpk, msk = keygen_manager(params)
     ml = MembershipList()
     seed_u = keygen_user(params)
@@ -69,18 +92,20 @@ def test_open_and_judge(params):
 
 
 def test_invalid_cid_star_rejected(params):
+    """Presenting a wrong ``cid_star`` must raise ``ValueError``."""
     _, msk = keygen_manager(params)
     ml = MembershipList()
     seed_u = keygen_user(params)
     uid, _ = join(msk, "eve", ml, params)
     wots_pks, _ = csr(seed_u, 1, params)
 
-    bad_cs = b'\x00' * params.n
+    bad_cs = b"\x00" * params.n
     with pytest.raises(ValueError):
         gen_cert(msk, uid, bad_cs, wots_pks, ml, params)
 
 
 def test_two_users_independent(params):
+    """Revoking alice must not invalidate bob's signature."""
     mpk, msk = keygen_manager(params)
     ml = MembershipList()
 
@@ -102,7 +127,6 @@ def test_two_users_independent(params):
     assert verify(msg, sig_a, revoked, mpk, params)
     assert verify(msg, sig_b, revoked, mpk, params)
 
-    # revoke alice, bob's sig still valid
     revoke(msk, [uid_a], ml, revoked, params)
     assert not verify(msg, sig_a, revoked, mpk, params)
     assert verify(msg, sig_b, revoked, mpk, params)
