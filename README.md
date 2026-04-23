@@ -4,11 +4,11 @@ A Python implementation of the NIST-standardised SPHINCS+ (SLH-DSA) stateless
 hash-based signature scheme, with four stacked implementation-level
 optimisations and a benchmark harness to quantify each one's contribution.
 
-The reference design follows [SPHINCS+ (eprint 2019/1086)](https://eprint.iacr.org/2019/1086.pdf).
+The baseline follows the [SPHINCS+ spec (eprint 2019/1086)](https://eprint.iacr.org/2019/1086.pdf). No external dependencies — just Python's standard library.
 
 ---
 
-## 1. Project layout
+## Project layout
 
 ```
 sphincsplus/
@@ -21,8 +21,9 @@ sphincsplus/
 │   ├── xmss.py         # XMSS Merkle tree + auth path (Opt-4 toggle here)
 │   ├── fors.py         # FORS few-time signatures
 │   ├── hypertree.py    # d-layer XMSS hypertree
-│   ├── sphincs.py      # Top-level spx_keygen / spx_sign / spx_verify
-│   └── utils.py        # base_w, first_bits, misc helpers
+│   ├── sphincs.py      # Top-level keygen / sign / verify
+│   ├── group_sig.py    # DGSP group signature scheme
+│   └── utils.py        # base_w, first_bits, byte helpers
 ├── tests/
 │   ├── test_wots.py
 │   ├── test_xmss.py
@@ -40,7 +41,7 @@ sphincsplus/
 
 ---
 
-## 2. Quick start
+## Quick start
 
 ```bash
 python3 -m venv .venv
@@ -57,7 +58,13 @@ The only runtime dependency is Python's standard library (`hashlib`,
 
 ---
 
-## 3. What was implemented
+## Part 1 — SPHINCS+ baseline + optimisations
+
+### What SPHINCS+ is
+
+SPHINCS+ is a stateless hash-based signature scheme. "Stateless" means you can sign as many messages as you want with the same key without tracking how many you've signed, unlike older hash-based schemes like XMSS. The security relies entirely on standard hash function properties (second preimage resistance), which makes it a conservative choice for post-quantum security.
+
+The scheme is built in layers:
 
 Four optimisations were added on top of the baseline SPHINCS+ code. **All are
 implementation-level** (no cryptographic change) and the parity tests in
@@ -66,7 +73,7 @@ implementation-level** (no cryptographic change) and the parity tests in
 
 ---
 
-### Optimisation 1 — In-place mutable ADRS buffer (`src/address.py`)
+The top-level API is in `src/sphincs.py`:
 
 **Problem:** The original ADRS maintained eight separate `bytearray` fields
 and rebuilt a fresh 32-byte buffer inside `to_bytes()` by copying each field
@@ -109,7 +116,7 @@ sphincs.set_optimised(False)  # revert to per-call sha256() path
 
 ---
 
-### Optimisation 3 — Inlined dispatch in `h()` / `prf()` (`src/hash.py`)
+The first version of the HashCtx hook went through a method call on the HashCtx object, which added a Python stack frame on every hash call. Caching the hashlib handle directly at module scope (`_active_pk_base`, `_active_sk_base`) and inlining the fast path into `h()` and `prf()` removed that overhead.
 
 **Problem:** The first `HashCtx` hook added an extra Python stack frame
 (one for `hash.h` → one for `HashCtx.h`), costing ~0.6 s per sign.
@@ -118,7 +125,7 @@ sphincs.set_optimised(False)  # revert to per-call sha256() path
 (`_active_pk_base`, `_active_sk_base`, `_active_n`, `_active_is_shake`) and
 inline the fast path into `hash.h` / `hash.prf`, eliminating the inner frame.
 
----
+Hardware: Apple Silicon, Python 3.14.3, single-threaded, `RANDOMIZE=False`, parameter set `sphincs-sha2-128s`.
 
 ### Optimisation 4 — ADRS snapshot: `h_adrs_bytes()` *(novel)*
 
@@ -180,7 +187,7 @@ identical.
 harness sets it to `False` for the `opt123` column to isolate Opt-4's
 contribution.
 
----
+Fixing the ADRS made the code spec-compliant and exposed three pre-existing bugs:
 
 ## 4. How all paths stay byte-identical
 
@@ -248,9 +255,13 @@ of them. Since 63 calls represent nearly the *entire* verify workload (unlike
 sign where 32 000 are swamped by 2 million WOTS+ calls), the speedup is
 disproportionately large for verify.
 
----
+**Verification**
 
-## 6. Bug fixes found during the refactor
+The verifier reconstructs the WOTS+ public key from the signature, then checks the manager's SPHINCS+ certificate on it. No user identity is revealed.
+
+```python
+ok = verify(message, sig, revoked_set, mpk, params)
+```
 
 | File | Fix |
 |---|---|
@@ -258,9 +269,11 @@ disproportionately large for verify.
 | `tests/test_fors.py` (`adrs` fixture) | Changed fixture from `AdrsType.WOTS_HASH` to `AdrsType.FORS_TREE`. |
 | `src/hash.py` (SHAKE digest size) | `.digest()` without a length raises on `shake_256`; fixed to `.digest(params.n)`. |
 
----
+```python
+honest = judge(sig, message, uid, pi, params)
+```
 
-## 7. Reproducing the numbers
+**Revocation**
 
 ```bash
 # 1. Create a virtualenv and install pytest
@@ -289,7 +302,7 @@ xmss_mod.ADRS_SNAPSHOT = False     # disable Opt-4
 
 ---
 
-## 8. Summary
+## Running everything
 
 | Optimisation | What it does | Main gain |
 |---|---|---|
